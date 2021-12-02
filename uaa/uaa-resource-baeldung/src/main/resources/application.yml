@@ -1,0 +1,17 @@
+server:
+  port: 8092
+spring:
+  application:
+    name: spring-security-resource-jws
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-url: http://127.0.0.1:8089/.well-known/jwks.json
+
+security:
+  oauth2:
+    resource:
+      jwk:
+        key-set-uri: http://127.0.0.1:8089/.well-known/jwks.json
+  
