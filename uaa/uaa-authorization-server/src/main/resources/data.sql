@@ -1,1 +1,0 @@
-INSERT INTO oauth_client_details (client_id, client_secret) VALUES ('tester001', '$2a$10$mcEwJ8qqhk2DYIle6VfhEOZHRdDbCSizAQbIwBR7tTuv9Q7Fca9Gi');
