@@ -1,50 +1,30 @@
-terraform {
-  required_version = ">= 1.0.0"
-
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 4.0"
-    }
-  }
+module "mysql-mod" {
+  source = "./mysql"
+  app_name = var.app_name
+  environment = var.environment
 }
 
-provider "aws" {
-  region = "ap-southeast-1"
+module "mysql-user" {
+  source = "./config"
+  app_name = var.app_name
+  environment = var.environment
 }
 
-resource "random_password" "master_password" {
-  length  = 16
-  special = false
+resource "local_file" "db-config" {
+    content  = "mysql -uadmin -p${module.mysql-mod.password} -h ${module.mysql-mod.address} -e\"${join(" ", module.mysql-user.create_user_cmd_list)}\""
+    filename = "${path.module}/db-config.sh"
 }
 
-resource "aws_db_instance" "default" {
-  identifier_prefix   = "terraform-mysql-dev-apps"
-  engine              = "mysql"
-  allocated_storage   = 5
-  instance_class      = "db.t2.micro"
-  skip_final_snapshot = true
-  publicly_accessible = true
-  db_name             = "terraform_main_database"
-  username = "admin"
-  password = random_password.master_password.result
-}
+# resource "null_resource" "post_config" {    
+#   triggers = {
+#     trigger_string = sha256(jsonencode(module.mysql-user.create_user_cmd_list))
+#   }
+#   provisioner "local-exec" {
+#     interpreter = ["/bin/bash", "-c"]    
+#     #command = "echo \"hello world! ${join(" ", module.mysql-user.create_user_cmd_list)} \""
+#     command = "mysql -uadmin -p${module.mysql-mod.password} -h ${module.mysql-mod.address} -e\"${join(" ", module.mysql-user.create_user_cmd_list)}\""
+#   }
+# }
 
-
-resource "aws_secretsmanager_secret" "rds_credentials" {
-  name = "credentials"
-}
-
-resource "aws_secretsmanager_secret_version" "rds_credentials" {
-  secret_id     = aws_secretsmanager_secret.rds_credentials.id
-  secret_string = <<EOF
-{
-  "username": "${aws_db_instance.default.username}",
-  "password": "${random_password.master_password.result}",
-  "engine": "mysql",
-  "host": "${aws_db_instance.default.address}",
-  "port": ${aws_db_instance.default.port},
-  "dbClusterIdentifier": "${aws_db_instance.default.identifier_prefix}"
-}
-EOF
-}
+# command = "mysql -u ${aws_db_instance.default.username} -p${random_password.master_password.result} -h ${aws_db_instance.default.address} -e\"${join(" ", local.rds_password_list)}\""
+# command = "echo -e\"${join(" ", module.mysql-user.create_user_cmd_list)}\""
